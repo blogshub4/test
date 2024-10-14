@@ -1,53 +1,32 @@
 <?php
-// Fetch YAML content from file
-$yamlContent = file_get_contents('path/to/your/file.yaml');
+// Git repository URL for the YAML file
+$gitUrl = 'https://github.com/your-username/your-repo/raw/main/path/to/your-file.yaml';
 
-// Function to manually parse YAML content into a PHP array
-function parseCustomYaml($yamlContent) {
-    $lines = explode("\n", $yamlContent); // Split by lines
-    $result = [];
-    $currentSection = '';  // This will keep track of the section like "roles", "DB", etc.
-    
-    foreach ($lines as $line) {
-        $line = trim($line);  // Remove any extra spaces
+// Username and personal access token (PAT) for authentication
+$username = 'your-username';
+$token = 'your-access-token';
 
-        // Skip empty lines
-        if (empty($line)) {
-            continue;
-        }
+// Initialize cURL session
+$ch = curl_init();
 
-        // If line is a section header like "roles:", "DB:"
-        if (preg_match('/^([a-zA-Z0-9]+):$/', $line, $matches)) {
-            $currentSection = $matches[1];
-            $result[$currentSection] = [];
-        }
+// Set cURL options
+curl_setopt($ch, CURLOPT_URL, $gitUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Basic ' . base64_encode("$username:$token")
+]);
 
-        // If line starts with "-", it's a list item like "- hDB"
-        elseif (preg_match('/^- (.+)$/', $line, $matches)) {
-            $result[$currentSection][] = $matches[1];
-        }
+// Execute the request and fetch the response
+$response = curl_exec($ch);
 
-        // If line contains a key-value pair, like "server: GLMyserver"
-        elseif (preg_match('/^([a-zA-Z0-9]+) *: *(.+)$/', $line, $matches)) {
-            $key = $matches[1];
-            $value = trim($matches[2], '"\'');  // Remove any quotes around the value
-
-            // Handle specific case for nested sections like GL and SL
-            if (in_array($currentSection, ['GL', 'SL'])) {
-                $result[$currentSection][$key] = $value;
-            } else {
-                // For non-nested structures, store the key-value pair as a string
-                $result[$currentSection][] = "$key: $value";
-            }
-        }
-    }
-    
-    return $result;
+// Check if there was an error
+if ($response === false) {
+    echo "cURL Error: " . curl_error($ch);
+} else {
+    // Output or parse the YAML content
+    echo $response;
 }
 
-// Parse the YAML content
-$parsedData = parseCustomYaml($yamlContent);
-
-// Output the resulting array
-print_r($parsedData);
+// Close cURL session
+curl_close($ch);
 ?>
