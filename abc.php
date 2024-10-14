@@ -1,32 +1,45 @@
 <?php
-// Git repository URL for the YAML file
-$gitUrl = 'https://github.com/your-username/your-repo/raw/main/path/to/your-file.yaml';
 
-// Username and personal access token (PAT) for authentication
+// GitHub repository details
 $username = 'your-username';
-$token = 'your-access-token';
+$token = 'your-personal-access-token';
+$repository = 'username/repository-name';
+$branch = 'branch-name';  // The branch from which to fetch the file
+$filePath = 'path/to/your/file.yaml';  // Path to your YAML file in the repository
 
-// Initialize cURL session
-$ch = curl_init();
+// URL to fetch the file from GitHub API
+$url = "https://api.github.com/repos/$repository/contents/$filePath?ref=$branch";
 
-// Set cURL options
-curl_setopt($ch, CURLOPT_URL, $gitUrl);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'Authorization: Basic ' . base64_encode("$username:$token")
-]);
+// Set up HTTP headers for authentication and GitHub API access
+$options = [
+    'http' => [
+        'header' => [
+            "Authorization: Basic " . base64_encode("$username:$token"),
+            "User-Agent: PHP"
+        ]
+    ]
+];
 
-// Execute the request and fetch the response
-$response = curl_exec($ch);
+// Create a stream context for the request
+$context = stream_context_create($options);
 
-// Check if there was an error
-if ($response === false) {
-    echo "cURL Error: " . curl_error($ch);
+// Fetch the file content from GitHub
+$response = file_get_contents($url, false, $context);
+
+// Decode the JSON response (GitHub returns file content as base64)
+$responseData = json_decode($response, true);
+
+// Check if the file was fetched successfully
+if (isset($responseData['content'])) {
+    // Decode base64-encoded content of the file
+    $fileContent = base64_decode($responseData['content']);
+
+    // Output or process the YAML file content
+    echo "YAML File Content:\n";
+    echo $fileContent;
 } else {
-    // Output or parse the YAML content
-    echo $response;
+    // Handle errors
+    echo "Failed to fetch the YAML file. Error: " . $responseData['message'];
 }
 
-// Close cURL session
-curl_close($ch);
 ?>
