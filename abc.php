@@ -1,4 +1,85 @@
+<?php
+// Function to parse YAML content dynamically
+function parseYaml($lines, $indentLevel = 0) {
+    $result = [];
+    $currentKey = null;
+    $isList = false;
 
+    foreach ($lines as $line) {
+        // Skip empty lines
+        if (trim($line) === '') continue;
+
+        // Count leading spaces to determine the indent level
+        $currentIndent = strlen($line) - strlen(ltrim($line));
+
+        // If current line is less indented than the indent level, break recursion
+        if ($currentIndent < $indentLevel) {
+            break;
+        }
+
+        // Remove the leading spaces
+        $line = trim($line);
+
+        // Check if the line starts a list (begins with a hyphen)
+        if (strpos($line, '-') === 0) {
+            $isList = true;
+            $line = trim(substr($line, 1));
+        }
+
+        // Split the line by ':' to separate keys from values
+        $keyValue = explode(':', $line, 2);
+        $key = trim($keyValue[0]);
+        $value = isset($keyValue[1]) ? trim($keyValue[1], " '\"") : null;
+
+        if ($value === null) {
+            // If there's no value, assume it's a nested structure
+            $nestedLines = array_slice($lines, array_search($line, $lines) + 1);
+            $value = parseYaml($nestedLines, $currentIndent + 2);
+        }
+
+        if ($isList) {
+            // If it's a list, add value to the array
+            $result[] = $value;
+        } else {
+            // Otherwise, assign key-value to the result array
+            $result[$key] = $value;
+        }
+
+        // Handle the case where the next line is less indented (i.e., go back to parent level)
+        $isList = false;
+    }
+
+    return $result;
+}
+
+// Read the YAML file dynamically
+$yamlFile = 'data.yaml'; // Path to your YAML file
+$yamlContent = file_get_contents($yamlFile);
+
+// Check if the file was read successfully
+if ($yamlContent === false) {
+    die('Error reading the YAML file.');
+}
+
+// Split the YAML content into lines
+$lines = explode("\n", $yamlContent);
+
+// Parse the YAML content into a PHP array
+$parsedData = parseYaml($lines);
+
+// Convert the result array to JSON
+$jsonData = json_encode($parsedData, JSON_PRETTY_PRINT);
+
+// Output the JSON
+echo "YAML content as JSON:\n";
+echo $jsonData;
+?>
+
+
+
+
+
+/////////////////////////
 <?php
 // Define the YAML content as a string
 $yaml = "
