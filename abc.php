@@ -1,3 +1,64 @@
+
+<?php
+// Define the YAML content as a string
+$yaml = "
+dbs:
+  - name: ecrime
+    GL:
+      server: 's1'
+      port: 'p1'
+    SL:
+      server: 's2'
+      port: 'p2'
+  - name: ecrime_t
+    GL:
+      server: 's3'
+      port: 'p3'
+    SL:
+      server: 's4'
+      port: 'p4'
+";
+
+// Parse YAML manually (simple approach)
+$lines = explode("\n", trim($yaml));
+$result = [];
+$currentKey = null;
+$subArray = null;
+
+foreach ($lines as $line) {
+    $line = trim($line);
+    
+    if (strpos($line, 'dbs:') === 0) {
+        $result['dbs'] = [];
+    } elseif (strpos($line, '- name:') === 0) {
+        // Handle a new item in the 'dbs' array
+        $currentKey = count($result['dbs']);
+        $result['dbs'][$currentKey]['name'] = trim(str_replace('- name:', '', $line));
+    } elseif (strpos($line, 'GL:') === 0) {
+        $subArray = 'GL';
+        $result['dbs'][$currentKey][$subArray] = [];
+    } elseif (strpos($line, 'SL:') === 0) {
+        $subArray = 'SL';
+        $result['dbs'][$currentKey][$subArray] = [];
+    } elseif (strpos($line, 'server:') !== false) {
+        $result['dbs'][$currentKey][$subArray]['server'] = trim(str_replace('server:', '', $line), "'");
+    } elseif (strpos($line, 'port:') !== false) {
+        $result['dbs'][$currentKey][$subArray]['port'] = trim(str_replace('port:', '', $line), "'");
+    }
+}
+
+// Convert the result array to JSON
+$jsonData = json_encode($result, JSON_PRETTY_PRINT);
+
+// Output the JSON
+echo "YAML as JSON: \n";
+echo $jsonData;
+?>
+========================================
+
+
+
+
 <?php
 // Git repository URL with the specific branch and path to the YAML file
 $repoUrl = "https://username:password@github.com/user/repo/blob/branch-name/path/to/config.yaml";
