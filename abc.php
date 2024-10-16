@@ -1,3 +1,162 @@
+
+<?php
+
+class SimpleYamlParser {
+    private $indentSpaces = 2;
+    
+    public function parseFile($filePath) {
+        try {
+            // Check if file exists
+            if (!file_exists($filePath)) {
+                throw new Exception('File not found: ' . $filePath);
+            }
+
+            // Read file content
+            $content = file_get_contents($filePath);
+            if ($content === false) {
+                throw new Exception('Unable to read file: ' . $filePath);
+            }
+
+            return $this->parse($content);
+        } catch (Exception $e) {
+            error_log('YAML Parser Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function parse($yamlString) {
+        // Remove comments and empty lines
+        $lines = array_filter(explode("\n", $yamlString), function($line) {
+            $trimmedLine = trim($line);
+            return $trimmedLine !== '' && !str_starts_with($trimmedLine, '#');
+        });
+
+        $result = [];
+        $currentPath = [];
+        $previousIndent = -1;
+
+        foreach ($lines as $line) {
+            // Count leading spaces for indentation level
+            $indent = strlen($line) - strlen(ltrim($line));
+            $indent = floor($indent / $this->indentSpaces);
+            
+            // Remove leading/trailing whitespace
+            $line = trim($line);
+
+            // Skip empty lines and comments
+            if (empty($line) || $line[0] === '#') {
+                continue;
+            }
+
+            // Parse key and value
+            if (strpos($line, ':') !== false) {
+                list($key, $value) = array_pad(explode(':', $line, 2), 2, '');
+                $key = trim($key);
+                $value = trim($value);
+
+                // Adjust current path based on indentation
+                while (count($currentPath) > $indent) {
+                    array_pop($currentPath);
+                }
+
+                if (empty($value)) {
+                    // This is a new nested level
+                    $currentPath[$indent] = $key;
+                } else {
+                    // This is a key-value pair
+                    // Handle different value types
+                    $value = $this->parseValue($value);
+                    
+                    // Build the complete path and set the value
+                    $target = &$result;
+                    for ($i = 0; $i < $indent; $i++) {
+                        if (isset($currentPath[$i])) {
+                            if (!isset($target[$currentPath[$i]])) {
+                                $target[$currentPath[$i]] = [];
+                            }
+                            $target = &$target[$currentPath[$i]];
+                        }
+                    }
+                    $target[$key] = $value;
+                }
+            } else if (str_starts_with($line, '-')) {
+                // Handle array items
+                $value = trim(substr($line, 1));
+                $value = $this->parseValue($value);
+                
+                $target = &$result;
+                for ($i = 0; $i < $indent; $i++) {
+                    if (isset($currentPath[$i])) {
+                        if (!isset($target[$currentPath[$i]])) {
+                            $target[$currentPath[$i]] = [];
+                        }
+                        $target = &$target[$currentPath[$i]];
+                    }
+                }
+                
+                $lastKey = end($currentPath);
+                if ($lastKey) {
+                    if (!is_array($target[$lastKey])) {
+                        $target[$lastKey] = [];
+                    }
+                    $target[$lastKey][] = $value;
+                }
+            }
+
+            $previousIndent = $indent;
+        }
+
+        return $result;
+    }
+
+    private function parseValue($value) {
+        $value = trim($value);
+        
+        // Handle null
+        if ($value === '~' || strtolower($value) === 'null') {
+            return null;
+        }
+        
+        // Handle booleans
+        if (strtolower($value) === 'true') {
+            return true;
+        }
+        if (strtolower($value) === 'false') {
+            return false;
+        }
+        
+        // Handle numbers
+        if (is_numeric($value)) {
+            return strpos($value, '.') !== false ? (float)$value : (int)$value;
+        }
+        
+        // Handle quoted strings
+        if (preg_match('/^([\'"])(.*)\1$/', $value, $matches)) {
+            return $matches[2];
+        }
+        
+        return $value;
+    }
+}
+
+// Example usage:
+
+$parser = new SimpleYamlParser();
+$data = $parser->parseFile('data.yaml');
+
+if ($data !== false) {
+    echo "<pre>";
+    print_r($data);
+    print_r($data['dbs']['GL']);
+}
+
+
+
+
+
+
+
+
 <?php
 // Function to parse YAML content dynamically
 function parseYaml($lines, $indentLevel = 0) {
