@@ -1,3 +1,95 @@
+// store/counterSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: {
+    value: 0
+  },
+  reducers: {
+    increment: (state) => {
+      state.value += 1;
+    },
+    reset: (state) => {
+      state.value = 0;
+    }
+  }
+});
+
+export const { increment, reset } = counterSlice.actions;
+export default counterSlice.reducer;
+
+// store/store.js
+import { configureStore } from '@reduxjs/toolkit';
+import counterReducer from './counterSlice';
+
+export const store = configureStore({
+  reducer: {
+    counter: counterReducer
+  }
+});
+
+// App.js
+import { Provider } from 'react-redux';
+import { store } from './store/store';
+import Counter from './Counter';
+
+function App() {
+  return (
+    <Provider store={store}>
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-4">Redux Reset Example</h1>
+        <Counter />
+      </div>
+    </Provider>
+  );
+}
+
+export default App;
+
+// Counter.js
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { increment, reset } from './store/counterSlice';
+
+const Counter = () => {
+  const dispatch = useDispatch();
+  const count = useSelector((state) => state.counter.value);
+
+  return (
+    <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+      <div className="text-center mb-6">
+        <h2 className="text-3xl font-bold text-gray-800">Counter: {count}</h2>
+      </div>
+      
+      <div className="flex justify-center space-x-4">
+        <button
+          onClick={() => dispatch(increment())}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        >
+          Increment
+        </button>
+        
+        <button
+          onClick={() => dispatch(reset())}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default Counter;
+
+
+
+
+/////////////////////////////
+
+
+
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 
