@@ -1,3 +1,58 @@
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+
+// Example Redux slice
+const counterSlice = {
+  name: 'counter',
+  initialState: {
+    value: 0
+  },
+  reducers: {
+    increment: (state) => {
+      state.value += 1;
+    },
+    reset: (state) => {
+      state.value = 0;  // Reset to initial value
+    }
+  }
+};
+
+// Example component showing reset functionality
+const CounterWithReset = () => {
+  const dispatch = useDispatch();
+  const count = useSelector((state) => state.counter.value);
+
+  const handleReset = () => {
+    dispatch({ type: 'counter/reset' });
+  };
+
+  const handleIncrement = () => {
+    dispatch({ type: 'counter/increment' });
+  };
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Current Count: {count}</h2>
+      <div className="space-x-4">
+        <button 
+          onClick={handleIncrement}
+          className="px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Increment
+        </button>
+        <button 
+          onClick={handleReset}
+          className="px-4 py-2 bg-red-500 text-white rounded"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default CounterWithReset;
+
 
 <?php
 
